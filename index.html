@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width,
+                 initial-scale=1.0,
+                 maximum-scale=1.0,
+                 user-scalable=no,
+                 viewport-fit=cover"
+    >
+
+    <title>Para mi paletita bonita 💞</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: black;
+            touch-action: manipulation;
+        }
+
+        body {
+            position: fixed;
+            inset: 0;
+            cursor: pointer;
+        }
+
+        video {
+            position: absolute;
+            inset: 0;
+
+            width: 100%;
+            height: 100%;
+
+            object-fit: contain;
+            background: black;
+
+            user-select: none;
+            -webkit-user-select: none;
+
+            pointer-events: none;
+
+            opacity: 0;
+
+            transition: opacity 0.35s ease-in-out;
+
+            will-change: opacity;
+        }
+
+        #videoA {
+            z-index: 2;
+            opacity: 1;
+        }
+
+        #videoB {
+            z-index: 1;
+            opacity: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <video
+        id="videoA"
+        muted
+        playsinline
+        webkit-playsinline
+        preload="auto"
+    ></video>
+
+    <video
+        id="videoB"
+        muted
+        playsinline
+        webkit-playsinline
+        preload="auto"
+    ></video>
+
+    <audio
+        id="musica"
+        src="musica.mp3"
+        loop
+        preload="auto"
+    ></audio>
+
+    <script>
+
+        // =========================
+        // VIDEOS
+        // =========================
+
+        const videos = [
+            "videos/01.mp4",
+            "videos/02.mp4",
+            "videos/03.mp4",
+            "videos/04.mp4",
+            "videos/05.mp4",
+            "videos/06.mp4",
+            "videos/07.mp4",
+            "videos/08.mp4",
+            "videos/09.mp4",
+            "videos/10.mp4",
+            "videos/11.mp4",
+            "videos/12.mp4",
+            "videos/13.mp4"
+        ];
+
+
+        // =========================
+        // ELEMENTOS
+        // =========================
+
+        const musica =
+            document.getElementById("musica");
+
+        let visible =
+            document.getElementById("videoA");
+
+        let precarga =
+            document.getElementById("videoB");
+
+
+        // =========================
+        // ESTADO
+        // =========================
+
+        let indice = 0;
+
+        let iniciado = false;
+
+        let cambiando = false;
+
+        let finalizado = false;
+
+
+        // =========================
+        // PRIMER VIDEO
+        // =========================
+
+        visible.src = videos[0];
+
+        visible.load();
+
+
+        // =========================
+        // PRECARGAR SIGUIENTE
+        // =========================
+
+        function prepararSiguiente() {
+
+            const siguiente =
+                indice + 1;
+
+
+            if (siguiente >= videos.length) {
+                return;
+            }
+
+
+            precarga.pause();
+
+            precarga.removeAttribute("src");
+
+            precarga.load();
+
+
+            precarga.src =
+                videos[siguiente];
+
+            precarga.preload =
+                "auto";
+
+            precarga.load();
+
+        }
+
+
+        // =========================
+        // ESPERAR VIDEO
+        // =========================
+
+        function esperarVideo(video) {
+
+            return new Promise(resolve => {
+
+                if (video.readyState >= 3) {
+
+                    resolve();
+
+                    return;
+
+                }
+
+
+                let terminado = false;
+
+
+                const listo = () => {
+
+                    if (terminado) {
+                        return;
+                    }
+
+
+                    terminado = true;
+
+                    limpiar();
+
+                    resolve();
+
+                };
+
+
+                const limpiar = () => {
+
+                    video.removeEventListener(
+                        "canplay",
+                        listo
+                    );
+
+                    video.removeEventListener(
+                        "loadeddata",
+                        listo
+                    );
+
+                };
+
+
+                video.addEventListener(
+                    "canplay",
+                    listo,
+                    { once: true }
+                );
+
+
+                video.addEventListener(
+                    "loadeddata",
+                    listo,
+                    { once: true }
+                );
+
+
+                // Seguridad por conexión lenta
+
+                setTimeout(() => {
+
+                    if (!terminado) {
+
+                        terminado = true;
+
+                        limpiar();
+
+                        resolve();
+
+                    }
+
+                }, 3000);
+
+            });
+
+        }
+
+
+        // =========================
+        // PRECARGAR VIDEO 2
+        // =========================
+
+        visible.addEventListener(
+            "loadeddata",
+            prepararSiguiente,
+            { once: true }
+        );
+
+
+        // =========================
+        // INICIAR EXPERIENCIA
+        // =========================
+
+        async function iniciar() {
+
+            if (iniciado) {
+                return;
+            }
+
+
+            iniciado = true;
+
+
+            // Música
+
+            try {
+
+                musica.currentTime = 0;
+
+                await musica.play();
+
+            }
+
+            catch (error) {
+
+                console.log(
+                    "No se pudo iniciar la música:",
+                    error
+                );
+
+            }
+
+
+            // Primer video
+
+            try {
+
+                visible.currentTime = 0;
+
+                await visible.play();
+
+            }
+
+            catch (error) {
+
+                console.log(
+                    "No se pudo iniciar el video:",
+                    error
+                );
+
+            }
+
+
+            prepararSiguiente();
+
+        }
+
+
+        // =========================
+        // SIGUIENTE VIDEO
+        // =========================
+
+        async function siguienteVideo() {
+
+            if (cambiando) {
+                return;
+            }
+
+
+            if (indice >= videos.length - 1) {
+
+                finalizado = true;
+
+                return;
+
+            }
+
+
+            cambiando = true;
+
+
+            // Esperar al siguiente video
+
+            await esperarVideo(
+                precarga
+            );
+
+
+            // Reproducir oculto
+
+            try {
+
+                precarga.currentTime = 0;
+
+                await precarga.play();
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "No se pudo reproducir el siguiente video:",
+                    error
+                );
+
+
+                cambiando = false;
+
+                return;
+
+            }
+
+
+            // =========================
+            // TRANSICIÓN
+            // =========================
+
+            precarga.style.zIndex =
+                "3";
+
+            visible.style.zIndex =
+                "2";
+
+
+            precarga.offsetHeight;
+
+
+            requestAnimationFrame(() => {
+
+                precarga.style.opacity =
+                    "1";
+
+                visible.style.opacity =
+                    "0";
+
+            });
+
+
+            await new Promise(resolve => {
+
+                setTimeout(
+                    resolve,
+                    350
+                );
+
+            });
+
+
+            // =========================
+            // INTERCAMBIAR
+            // =========================
+
+            const anterior =
+                visible;
+
+
+            visible =
+                precarga;
+
+            precarga =
+                anterior;
+
+
+            indice++;
+
+
+            // =========================
+            // LIMPIAR ANTERIOR
+            // =========================
+
+            precarga.pause();
+
+            precarga.removeAttribute(
+                "src"
+            );
+
+            precarga.load();
+
+
+            precarga.style.opacity =
+                "0";
+
+            precarga.style.zIndex =
+                "1";
+
+
+            visible.style.opacity =
+                "1";
+
+            visible.style.zIndex =
+                "2";
+
+
+            cambiando =
+                false;
+
+
+            // =========================
+            // PRECARGAR PRÓXIMO
+            // =========================
+
+            prepararSiguiente();
+
+
+            if (
+                indice >=
+                videos.length - 1
+            ) {
+
+                console.log(
+                    "Último video."
+                );
+
+            }
+
+        }
+
+
+        // =========================
+        // TAP / CLICK
+        // =========================
+
+        document.addEventListener(
+            "pointerup",
+            async event => {
+
+                event.preventDefault();
+
+
+                if (finalizado) {
+                    return;
+                }
+
+
+                // Primer tap:
+                // música + video 1
+
+                if (!iniciado) {
+
+                    await iniciar();
+
+                    return;
+
+                }
+
+
+                // Siguientes taps:
+                // cambiar video
+
+                await siguienteVideo();
+
+            }
+        );
+
+
+        // =========================
+        // EVITAR MENÚ CONTEXTUAL
+        // =========================
+
+        document.addEventListener(
+            "contextmenu",
+            event => {
+
+                event.preventDefault();
+
+            }
+        );
+
+
+        // =========================
+        // ERRORES
+        // =========================
+
+        document
+            .querySelectorAll("video")
+            .forEach(video => {
+
+                video.addEventListener(
+                    "error",
+                    () => {
+
+                        console.error(
+                            "Error cargando video:",
+                            video.currentSrc,
+                            video.error
+                        );
+
+                    }
+                );
+
+            });
+
+    </script>
+
+</body>
+</html>
